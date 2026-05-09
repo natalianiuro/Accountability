@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Upload, Sparkles, AlertCircle, CheckCircle, FileText, Image } from 'lucide-react'
 import { CATEGORIES } from '../utils/categories'
 import { loadSettings } from '../utils/storage'
@@ -27,7 +27,12 @@ export default function UploadReceipt({ expenses }) {
   const [dragging, setDragging] = useState(false)
   const fileRef = useRef()
 
-  const settings = loadSettings()
+  const [settings, setSettings] = useState(loadSettings)
+  useEffect(() => {
+    const refresh = () => setSettings(loadSettings())
+    window.addEventListener('focus', refresh)
+    return () => window.removeEventListener('focus', refresh)
+  }, [])
 
   function set(field, value) {
     setForm(f => ({ ...f, [field]: value }))
@@ -153,7 +158,7 @@ export default function UploadReceipt({ expenses }) {
             className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <Sparkles size={15} />
-            {extracting ? 'Extrayendo datos...' : 'Extraer con IA (Claude)'}
+            {extracting ? 'Extrayendo datos...' : `Extraer con IA (${settings.aiProvider === 'claude' ? 'Claude' : 'Gemini'})`}
           </button>
           {!(settings.aiProvider === 'gemini' ? settings.geminiApiKey : settings.claudeApiKey) && (
             <p className="text-xs text-slate-400">Requiere API key en Configuración</p>
