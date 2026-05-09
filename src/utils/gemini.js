@@ -1,4 +1,4 @@
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
 const PROMPT = `Analiza esta boleta o factura y extrae los datos. Responde SOLO con JSON válido, sin texto adicional ni bloques de código:
 {
