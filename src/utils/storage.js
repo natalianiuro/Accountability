@@ -30,6 +30,8 @@ export function saveSettings(settings) {
 function defaultSettings() {
   return {
     claudeApiKey: '',
+    geminiApiKey: '',
+    aiProvider: 'gemini',
     currency: 'CLP',
     company: '',
   }

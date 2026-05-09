@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle, Eye, EyeOff, Key, Building, DollarSign } from 'lucide-react'
+import { CheckCircle, Eye, EyeOff, Key, Building, DollarSign, Cpu } from 'lucide-react'
 import { loadSettings, saveSettings } from '../utils/storage'
 
 const CURRENCIES = ['CLP','USD','EUR','ARS','PEN','MXN','COP','UYU']
@@ -7,7 +7,8 @@ const CURRENCIES = ['CLP','USD','EUR','ARS','PEN','MXN','COP','UYU']
 export default function Settings() {
   const [form, setForm] = useState(loadSettings())
   const [saved, setSaved] = useState(false)
-  const [showKey, setShowKey] = useState(false)
+  const [showClaude, setShowClaude] = useState(false)
+  const [showGemini, setShowGemini] = useState(false)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -54,27 +55,68 @@ export default function Settings() {
           </select>
         </div>
 
-        {/* Claude API key */}
+        {/* AI Provider */}
         <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+            <Cpu size={15} /> Proveedor de IA para extracción
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { id: 'gemini', label: 'Google Gemini', sub: 'Gratis · Recomendado', color: 'border-emerald-400 bg-emerald-50' },
+              { id: 'claude', label: 'Anthropic Claude', sub: 'De pago · Mayor precisión', color: 'border-violet-400 bg-violet-50' },
+            ].map(p => (
+              <button key={p.id} type="button" onClick={() => set('aiProvider', p.id)}
+                className={`text-left border-2 rounded-lg px-4 py-3 transition-colors ${form.aiProvider === p.id ? p.color : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                <p className="font-medium text-sm text-slate-800">{p.label}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{p.sub}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Gemini API key */}
+        <div className={form.aiProvider !== 'gemini' ? 'opacity-40 pointer-events-none' : ''}>
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-1">
+            <Key size={15} /> API Key de Google Gemini
+          </label>
+          <div className="relative">
+            <input
+              type={showGemini ? 'text' : 'password'}
+              value={form.geminiApiKey}
+              onChange={e => set('geminiApiKey', e.target.value)}
+              placeholder="AIza..."
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+            />
+            <button type="button" onClick={() => setShowGemini(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              {showGemini ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          <p className="text-xs text-slate-400 mt-1.5">
+            Obtén tu key gratis en <span className="text-sky-600 font-medium">aistudio.google.com</span> → Get API Key. No requiere tarjeta.
+          </p>
+        </div>
+
+        {/* Claude API key */}
+        <div className={form.aiProvider !== 'claude' ? 'opacity-40 pointer-events-none' : ''}>
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-1">
             <Key size={15} /> API Key de Claude (Anthropic)
           </label>
           <div className="relative">
             <input
-              type={showKey ? 'text' : 'password'}
+              type={showClaude ? 'text' : 'password'}
               value={form.claudeApiKey}
               onChange={e => set('claudeApiKey', e.target.value)}
               placeholder="sk-ant-..."
               className="w-full border border-slate-300 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
             />
-            <button type="button" onClick={() => setShowKey(v => !v)}
+            <button type="button" onClick={() => setShowClaude(v => !v)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showClaude ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           <p className="text-xs text-slate-400 mt-1.5">
-            Se guarda solo en tu navegador. Necesaria para extracción automática de boletas con IA.
-            Obtén tu clave en <span className="text-sky-600">console.anthropic.com</span>.
+            Obtén tu key en <span className="text-sky-600 font-medium">console.anthropic.com</span>. Requiere créditos de pago.
           </p>
         </div>
 
@@ -86,10 +128,9 @@ export default function Settings() {
         </div>
       </form>
 
-      {/* Info box */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800 space-y-1">
         <p className="font-semibold">Privacidad y almacenamiento</p>
-        <p>Todos los datos se guardan localmente en tu navegador (localStorage). No se envía nada a ningún servidor externo, salvo las imágenes de boletas que envíes a la API de Claude para extracción.</p>
+        <p>Todos los datos se guardan localmente en tu navegador (localStorage). Las API keys nunca salen de tu dispositivo salvo para llamar directamente a la IA al escanear una boleta.</p>
       </div>
     </div>
   )

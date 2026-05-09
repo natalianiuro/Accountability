@@ -3,6 +3,7 @@ import { Upload, Sparkles, AlertCircle, CheckCircle, FileText, Image } from 'luc
 import { CATEGORIES } from '../utils/categories'
 import { loadSettings } from '../utils/storage'
 import { extractReceiptData, fileToBase64, isImageFile } from '../utils/claude'
+import { extractWithGemini } from '../utils/gemini'
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -50,15 +51,19 @@ export default function UploadReceipt({ expenses }) {
       setExtractError('La extracción automática requiere una imagen (JPG, PNG, WebP).')
       return
     }
-    if (!settings.claudeApiKey) {
-      setExtractError('Configura tu API key de Claude en Configuración para usar la extracción automática.')
+    const provider = settings.aiProvider || 'gemini'
+    const apiKey = provider === 'gemini' ? settings.geminiApiKey : settings.claudeApiKey
+    if (!apiKey) {
+      setExtractError(`Configura tu API key de ${provider === 'gemini' ? 'Gemini' : 'Claude'} en Configuración.`)
       return
     }
     setExtracting(true)
     setExtractError('')
     try {
       const base64 = await fileToBase64(file)
-      const data = await extractReceiptData(base64, file.type, settings.claudeApiKey)
+      const data = provider === 'gemini'
+        ? await extractWithGemini(base64, file.type, apiKey)
+        : await extractReceiptData(base64, file.type, apiKey)
       setForm(prev => ({
         ...prev,
         date: data.date || prev.date,
@@ -150,7 +155,7 @@ export default function UploadReceipt({ expenses }) {
             <Sparkles size={15} />
             {extracting ? 'Extrayendo datos...' : 'Extraer con IA (Claude)'}
           </button>
-          {!settings.claudeApiKey && (
+          {!(settings.aiProvider === 'gemini' ? settings.geminiApiKey : settings.claudeApiKey) && (
             <p className="text-xs text-slate-400">Requiere API key en Configuración</p>
           )}
         </div>
