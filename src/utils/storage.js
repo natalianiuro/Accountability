@@ -34,6 +34,8 @@ function defaultSettings() {
     aiProvider: 'gemini',
     currency: 'CLP',
     company: '',
+    supabaseUrl: '',
+    supabaseAnonKey: '',
   }
 }
 
