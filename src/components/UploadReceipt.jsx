@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Upload, Sparkles, AlertCircle, CheckCircle, FileText, Image } from 'lucide-react'
 import { CATEGORIES } from '../utils/categories'
 import { loadSettings } from '../utils/storage'
-import { extractReceiptData, fileToBase64, isImageFile } from '../utils/claude'
+import { extractReceiptData, fileToBase64, isImageFile, isSupportedForAI } from '../utils/claude'
 import { extractWithGemini } from '../utils/gemini'
 
 const today = () => new Date().toISOString().split('T')[0]
@@ -52,8 +52,8 @@ export default function UploadReceipt({ expenses }) {
   }
 
   async function handleExtract() {
-    if (!file || !isImageFile(file)) {
-      setExtractError('La extracción automática requiere una imagen (JPG, PNG, WebP).')
+    if (!file || !isSupportedForAI(file)) {
+      setExtractError('La extracción automática requiere una imagen (JPG, PNG, WebP) o PDF.')
       return
     }
     const provider = settings.aiProvider || 'gemini'
@@ -149,7 +149,7 @@ export default function UploadReceipt({ expenses }) {
       </div>
 
       {/* AI extract button */}
-      {file && isImageFile(file) && (
+      {file && isSupportedForAI(file) && (
         <div className="flex items-center gap-3">
           <button
             type="button"

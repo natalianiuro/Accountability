@@ -1,6 +1,11 @@
 const API_URL = 'https://api.anthropic.com/v1/messages'
 
 export async function extractReceiptData(base64Data, mimeType, apiKey) {
+  const isPdf = mimeType === 'application/pdf'
+  const fileBlock = isPdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } }
+    : { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64Data } }
+
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: {
@@ -15,10 +20,7 @@ export async function extractReceiptData(base64Data, mimeType, apiKey) {
       messages: [{
         role: 'user',
         content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mimeType, data: base64Data }
-          },
+          fileBlock,
           {
             type: 'text',
             text: `Analiza esta boleta o factura y extrae los datos. Responde SOLO con JSON válido, sin texto adicional:
@@ -64,4 +66,8 @@ export function fileToBase64(file) {
 
 export function isImageFile(file) {
   return file.type.startsWith('image/')
+}
+
+export function isSupportedForAI(file) {
+  return file.type.startsWith('image/') || file.type === 'application/pdf'
 }
