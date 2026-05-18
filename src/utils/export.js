@@ -3,13 +3,14 @@ import { getCategoryLabel } from './categories'
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
-export function exportAnnualCSV(expenses, year, categories) {
-  const filtered = expenses.filter(e => new Date(e.date).getFullYear() === year)
+export function exportAnnualCSV(expenses, year, categories, currency = null) {
+  let filtered = expenses.filter(e => new Date(e.date).getFullYear() === year)
+  if (currency) filtered = filtered.filter(e => e.currency === currency)
   const catIds = categories.map(c => c.id)
 
-  // Build month × category matrix
   const rows = []
-  const header = ['Mes', ...categories.map(c => c.label), 'Total']
+  const currencyLabel = currency ? ` (${currency})` : ''
+  const header = [`Mes${currencyLabel}`, ...categories.map(c => c.label), 'Total']
   rows.push(header)
 
   let yearTotals = Object.fromEntries(catIds.map(id => [id, 0]))
@@ -33,13 +34,15 @@ export function exportAnnualCSV(expenses, year, categories) {
   rows.push(['TOTAL ANUAL', ...catIds.map(id => yearTotals[id] || ''), yearGrand || ''])
 
   const csv = rows.map(r => r.join(',')).join('\n')
-  downloadCSV(csv, `gastos_${year}.csv`)
+  const suffix = currency ? `_${currency}` : ''
+  downloadCSV(csv, `gastos_${year}${suffix}.csv`)
 }
 
-export function exportDetailCSV(expenses, year) {
-  const filtered = expenses
+export function exportDetailCSV(expenses, year, currency = null) {
+  let filtered = expenses
     .filter(e => !year || new Date(e.date).getFullYear() === year)
-    .sort((a, b) => a.date.localeCompare(b.date))
+  if (currency) filtered = filtered.filter(e => e.currency === currency)
+  filtered = filtered.sort((a, b) => a.date.localeCompare(b.date))
 
   const header = ['Fecha','Proveedor','Descripción','Categoría','Monto','Moneda']
   const rows = [header, ...filtered.map(e => [
@@ -52,7 +55,8 @@ export function exportDetailCSV(expenses, year) {
   ])]
 
   const csv = rows.map(r => r.join(',')).join('\n')
-  downloadCSV(csv, `gastos_detalle_${year || 'todos'}.csv`)
+  const suffix = currency ? `_${currency}` : '_todos'
+  downloadCSV(csv, `gastos_detalle_${year || 'todos'}${suffix}.csv`)
 }
 
 function downloadCSV(content, filename) {

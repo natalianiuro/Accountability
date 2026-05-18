@@ -14,7 +14,7 @@ function fmt(n, currency) {
 
 export default function MonthlyReport({ expenses }) {
   const settings = loadSettings()
-  const currency = settings.currency || 'CLP'
+  const defaultCurrency = settings.currency || 'CLP'
   const currentYear = new Date().getFullYear()
 
   const years = useMemo(() => {
@@ -23,10 +23,19 @@ export default function MonthlyReport({ expenses }) {
     return [...s].sort((a, b) => b - a)
   }, [expenses, currentYear])
 
+  const availableCurrencies = useMemo(() => {
+    const s = new Set(expenses.map(e => e.currency).filter(Boolean))
+    return [...s].sort()
+  }, [expenses])
+
   const [year, setYear] = useState(currentYear)
+  const [currencyTab, setCurrencyTab] = useState(null) // null = todas
+
+  const currency = currencyTab || defaultCurrency
 
   const { matrix, catTotals, monthTotals, grandTotal } = useMemo(() => {
-    const yearExp = expenses.filter(e => new Date(e.date).getFullYear() === year)
+    let yearExp = expenses.filter(e => new Date(e.date).getFullYear() === year)
+    if (currencyTab) yearExp = yearExp.filter(e => e.currency === currencyTab)
     const matrix = {}
     const catTotals = {}
     const monthTotals = Array(12).fill(0)
@@ -67,17 +76,35 @@ export default function MonthlyReport({ expenses }) {
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <button
-            onClick={() => exportAnnualCSV(expenses, year, CATEGORIES)}
+            onClick={() => exportAnnualCSV(expenses, year, CATEGORIES, currencyTab)}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-            <FileSpreadsheet size={15} /> Exportar resumen CSV
+            <FileSpreadsheet size={15} /> Exportar resumen CSV{currencyTab ? ` (${currencyTab})` : ''}
           </button>
           <button
-            onClick={() => exportDetailCSV(expenses, year)}
+            onClick={() => exportDetailCSV(expenses, year, currencyTab)}
             className="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-            <Download size={15} /> Exportar detalle CSV
+            <Download size={15} /> Exportar detalle CSV{currencyTab ? ` (${currencyTab})` : ''}
           </button>
         </div>
       </div>
+
+      {/* Currency tabs */}
+      {availableCurrencies.length > 1 && (
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+          <button
+            onClick={() => setCurrencyTab(null)}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${!currencyTab ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
+            Todas
+          </button>
+          {availableCurrencies.map(c => (
+            <button key={c}
+              onClick={() => setCurrencyTab(c)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${currencyTab === c ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Annual summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

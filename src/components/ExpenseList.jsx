@@ -63,7 +63,7 @@ function EditRow({ expense, onSave, onCancel }) {
 
 export default function ExpenseList({ expenses: { expenses, updateExpense, deleteExpense } }) {
   const settings = loadSettings()
-  const currency = settings.currency || 'CLP'
+  const defaultCurrency = settings.currency || 'CLP'
 
   const years = useMemo(() => {
     const s = new Set(expenses.map(e => new Date(e.date).getFullYear()))
@@ -73,9 +73,15 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
   const [filterYear, setFilterYear] = useState(new Date().getFullYear())
   const [filterMonth, setFilterMonth] = useState('')
   const [filterCat, setFilterCat] = useState('')
+  const [filterCurrency, setFilterCurrency] = useState('')
   const [search, setSearch] = useState('')
   const [editId, setEditId] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+
+  const availableCurrencies = useMemo(() => {
+    const s = new Set(expenses.map(e => e.currency).filter(Boolean))
+    return [...s].sort()
+  }, [expenses])
 
   const filtered = useMemo(() => {
     return expenses
@@ -84,6 +90,7 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
         if (filterYear && d.getFullYear() !== filterYear) return false
         if (filterMonth !== '' && d.getMonth() !== parseInt(filterMonth)) return false
         if (filterCat && e.category !== filterCat) return false
+        if (filterCurrency && e.currency !== filterCurrency) return false
         if (search) {
           const q = search.toLowerCase()
           if (!(e.vendor || '').toLowerCase().includes(q) &&
@@ -92,15 +99,29 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
         return true
       })
       .sort((a, b) => b.date.localeCompare(a.date))
-  }, [expenses, filterYear, filterMonth, filterCat, search])
+  }, [expenses, filterYear, filterMonth, filterCat, filterCurrency, search])
 
-  const total = filtered.reduce((s, e) => s + e.amount, 0)
+  const totalsByCurrency = useMemo(() => {
+    const map = {}
+    for (const e of filtered) {
+      const c = e.currency || defaultCurrency
+      map[c] = (map[c] || 0) + e.amount
+    }
+    return map
+  }, [filtered, defaultCurrency])
+
+  const currencyTotalsText = Object.entries(totalsByCurrency)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([c, total]) => fmt(total, c))
+    .join('  ·  ')
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Gastos</h1>
-        <p className="text-slate-500 text-sm mt-1">{filtered.length} registros · Total: {fmt(total, currency)}</p>
+        <p className="text-slate-500 text-sm mt-1">
+          {filtered.length} registros{currencyTotalsText ? ` · ${currencyTotalsText}` : ''}
+        </p>
       </div>
 
       {/* Filters */}
@@ -126,6 +147,13 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
           <option value="">Todas las categorías</option>
           {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
+        {availableCurrencies.length > 1 && (
+          <select value={filterCurrency} onChange={e => setFilterCurrency(e.target.value)}
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <option value="">Todas las monedas</option>
+            {availableCurrencies.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
       </div>
 
       {/* Table */}
@@ -144,6 +172,7 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map(e => editId === e.id ? (
+
                   <EditRow key={e.id} expense={e}
                     onSave={data => { updateExpense(e.id, { ...data, amount: parseFloat(data.amount) }); setEditId(null) }}
                     onCancel={() => setEditId(null)} />
@@ -154,7 +183,7 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
                     <td className="px-4 py-3 text-slate-500 max-w-xs truncate">{e.description || '—'}</td>
                     <td className="px-4 py-3"><CategoryBadge id={e.category} /></td>
                     <td className="px-4 py-3 font-semibold text-slate-800 text-right whitespace-nowrap">
-                      {fmt(e.amount, e.currency || currency)}
+                      {fmt(e.amount, e.currency || defaultCurrency)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
@@ -177,6 +206,23 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
                   </tr>
                 ))}
               </tbody>
+              {Object.keys(totalsByCurrency).length > 0 && (
+                <tfoot className="border-t-2 border-slate-200 bg-slate-50">
+                  {Object.entries(totalsByCurrency)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([c, total]) => (
+                      <tr key={c}>
+                        <td colSpan={4} className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                          Total {c}
+                        </td>
+                        <td className="px-4 py-2 text-right font-bold text-slate-800 whitespace-nowrap">
+                          {fmt(total, c)}
+                        </td>
+                        <td />
+                      </tr>
+                    ))}
+                </tfoot>
+              )}
             </table>
           </div>
         )}
