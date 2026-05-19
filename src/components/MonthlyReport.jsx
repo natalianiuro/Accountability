@@ -59,7 +59,7 @@ export default function MonthlyReport({ expenses }) {
     }
 
     return { matrix, catTotals, monthTotals, grandTotal }
-  }, [expenses, year])
+  }, [expenses, year, currencyTab])
 
   const activeCats = CATEGORIES.filter(c => catTotals[c.id] > 0)
 
