@@ -6,11 +6,14 @@ const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
 export function exportAnnualCSV(expenses, year, categories, currency = null) {
   let filtered = expenses.filter(e => new Date(e.date).getFullYear() === year)
   if (currency) filtered = filtered.filter(e => e.currency === currency)
-  const catIds = categories.map(c => c.id)
+
+  // Only include categories that actually have data
+  const activeCats = categories.filter(c => filtered.some(e => e.category === c.id))
+  const catIds = activeCats.map(c => c.id)
 
   const rows = []
   const currencyLabel = currency ? ` (${currency})` : ''
-  const header = [`Mes${currencyLabel}`, ...categories.map(c => c.label), 'Total']
+  const header = [`Mes${currencyLabel}`, ...activeCats.map(c => c.label), 'Total']
   rows.push(header)
 
   let yearTotals = Object.fromEntries(catIds.map(id => [id, 0]))
@@ -18,6 +21,7 @@ export function exportAnnualCSV(expenses, year, categories, currency = null) {
 
   for (let m = 0; m < 12; m++) {
     const monthExp = filtered.filter(e => new Date(e.date).getMonth() === m)
+    if (monthExp.length === 0) continue
     const catTotals = Object.fromEntries(catIds.map(id => [id, 0]))
     let rowTotal = 0
     for (const e of monthExp) {
@@ -28,10 +32,10 @@ export function exportAnnualCSV(expenses, year, categories, currency = null) {
         yearGrand += e.amount
       }
     }
-    rows.push([MONTHS[m], ...catIds.map(id => catTotals[id] || ''), rowTotal || ''])
+    rows.push([MONTHS[m], ...catIds.map(id => catTotals[id] || ''), rowTotal])
   }
 
-  rows.push(['TOTAL ANUAL', ...catIds.map(id => yearTotals[id] || ''), yearGrand || ''])
+  rows.push(['TOTAL ANUAL', ...catIds.map(id => yearTotals[id] || ''), yearGrand])
 
   const csv = rows.map(r => r.join(',')).join('\n')
   const suffix = currency ? `_${currency}` : ''
