@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts'
-import { Receipt, Calendar } from 'lucide-react'
+import { Receipt, Calendar, TrendingDown, TrendingUp, ArrowLeftRight } from 'lucide-react'
 import { CATEGORIES, getCategoryLabel } from '../utils/categories'
 import { loadSettings } from '../utils/storage'
 
@@ -112,6 +112,19 @@ export default function Dashboard({ expenses }) {
     [expenses]
   )
 
+  // Balance compras vs ventas por moneda
+  const balanceByCurrency = useMemo(() => {
+    const yearExp = expenses.filter(e => new Date(e.date).getFullYear() === thisYear)
+    const map = {}
+    for (const e of yearExp) {
+      const c = e.currency || 'CLP'
+      if (!map[c]) map[c] = { compras: 0, ventas: 0 }
+      const type = e.transactionType || 'compras'
+      map[c][type] += e.amount
+    }
+    return map
+  }, [expenses, thisYear])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -124,6 +137,41 @@ export default function Dashboard({ expenses }) {
           <span className="flex items-center gap-1.5"><Calendar size={14} /> {expenses.length} totales</span>
         </div>
       </div>
+
+      {/* Balance compras vs ventas */}
+      {Object.keys(balanceByCurrency).length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Object.entries(balanceByCurrency).sort(([a],[b]) => a.localeCompare(b)).map(([c, { compras, ventas }]) => (
+            <div key={c} className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{c} — Balance {thisYear}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-rose-50 rounded-lg p-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <TrendingDown size={13} className="text-rose-500" />
+                    <span className="text-xs text-rose-600 font-medium">Compras</span>
+                  </div>
+                  <p className="text-base font-bold text-rose-700">{fmt(compras, c)}</p>
+                </div>
+                <div className="bg-emerald-50 rounded-lg p-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <TrendingUp size={13} className="text-emerald-500" />
+                    <span className="text-xs text-emerald-600 font-medium">Ventas</span>
+                  </div>
+                  <p className="text-base font-bold text-emerald-700">{fmt(ventas, c)}</p>
+                </div>
+              </div>
+              <div className={`flex items-center justify-between rounded-lg px-3 py-2 ${ventas - compras >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <ArrowLeftRight size={13} /> Neto
+                </span>
+                <span className={`font-bold text-sm ${ventas - compras >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {ventas - compras >= 0 ? '+' : ''}{fmt(ventas - compras, c)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {currencies.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 py-16 text-center text-slate-400 text-sm">

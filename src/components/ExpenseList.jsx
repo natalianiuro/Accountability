@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Trash2, Pencil, Check, X, Search } from 'lucide-react'
-import { CATEGORIES, getCategoryLabel, CATEGORY_MAP } from '../utils/categories'
+import { CATEGORIES, getCategoryLabel, CATEGORY_MAP, TRANSACTION_TYPES, TRANSACTION_TYPE_MAP } from '../utils/categories'
 import { loadSettings } from '../utils/storage'
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -74,6 +74,7 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
   const [filterMonth, setFilterMonth] = useState('')
   const [filterCat, setFilterCat] = useState('')
   const [filterCurrency, setFilterCurrency] = useState('')
+  const [filterType, setFilterType] = useState('')
   const [search, setSearch] = useState('')
   const [editId, setEditId] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
@@ -91,6 +92,7 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
         if (filterMonth !== '' && d.getMonth() !== parseInt(filterMonth)) return false
         if (filterCat && e.category !== filterCat) return false
         if (filterCurrency && e.currency !== filterCurrency) return false
+        if (filterType && (e.transactionType || 'compras') !== filterType) return false
         if (search) {
           const q = search.toLowerCase()
           if (!(e.vendor || '').toLowerCase().includes(q) &&
@@ -99,7 +101,7 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
         return true
       })
       .sort((a, b) => b.date.localeCompare(a.date))
-  }, [expenses, filterYear, filterMonth, filterCat, filterCurrency, search])
+  }, [expenses, filterYear, filterMonth, filterCat, filterCurrency, filterType, search])
 
   const totalsByCurrency = useMemo(() => {
     const map = {}
@@ -154,6 +156,11 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
             {availableCurrencies.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
+        <select value={filterType} onChange={e => setFilterType(e.target.value)}
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400">
+          <option value="">Compras y Ventas</option>
+          {TRANSACTION_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+        </select>
       </div>
 
       {/* Table */}
@@ -165,7 +172,7 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  {['Fecha','Proveedor','Descripción','Categoría','Monto','Acciones'].map(h => (
+                  {['Fecha','Tipo','Proveedor','Descripción','Categoría','Monto','Acciones'].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium text-slate-600">{h}</th>
                   ))}
                 </tr>
@@ -179,6 +186,12 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
                 ) : (
                   <tr key={e.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{e.date}</td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const t = TRANSACTION_TYPE_MAP[e.transactionType || 'compras']
+                        return <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${t.color} ${t.text}`}>{t.label}</span>
+                      })()}
+                    </td>
                     <td className="px-4 py-3 font-medium text-slate-700">{e.vendor || '—'}</td>
                     <td className="px-4 py-3 text-slate-500 max-w-xs truncate">{e.description || '—'}</td>
                     <td className="px-4 py-3"><CategoryBadge id={e.category} /></td>
@@ -212,7 +225,7 @@ export default function ExpenseList({ expenses: { expenses, updateExpense, delet
                     .sort(([a], [b]) => a.localeCompare(b))
                     .map(([c, total]) => (
                       <tr key={c}>
-                        <td colSpan={4} className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        <td colSpan={5} className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
                           Total {c}
                         </td>
                         <td className="px-4 py-2 text-right font-bold text-slate-800 whitespace-nowrap">

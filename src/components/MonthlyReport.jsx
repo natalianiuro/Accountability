@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Download, FileSpreadsheet } from 'lucide-react'
-import { CATEGORIES } from '../utils/categories'
+import { CATEGORIES, TRANSACTION_TYPES } from '../utils/categories'
 import { loadSettings } from '../utils/storage'
 import { exportAnnualCSV, exportDetailCSV } from '../utils/export'
 
@@ -30,12 +30,14 @@ export default function MonthlyReport({ expenses }) {
 
   const [year, setYear] = useState(currentYear)
   const [currencyTab, setCurrencyTab] = useState(null) // null = todas
+  const [typeTab, setTypeTab] = useState(null) // null = todas
 
   const currency = currencyTab || defaultCurrency
 
   const { matrix, catTotals, monthTotals, grandTotal } = useMemo(() => {
     let yearExp = expenses.filter(e => new Date(e.date).getFullYear() === year)
     if (currencyTab) yearExp = yearExp.filter(e => e.currency === currencyTab)
+    if (typeTab) yearExp = yearExp.filter(e => (e.transactionType || 'compras') === typeTab)
     const matrix = {}
     const catTotals = {}
     const monthTotals = Array(12).fill(0)
@@ -59,7 +61,7 @@ export default function MonthlyReport({ expenses }) {
     }
 
     return { matrix, catTotals, monthTotals, grandTotal }
-  }, [expenses, year, currencyTab])
+  }, [expenses, year, currencyTab, typeTab])
 
   const activeCats = CATEGORIES.filter(c => catTotals[c.id] > 0)
 
@@ -88,23 +90,38 @@ export default function MonthlyReport({ expenses }) {
         </div>
       </div>
 
-      {/* Currency tabs */}
-      {availableCurrencies.length > 1 && (
+      {/* Type + currency tabs */}
+      <div className="flex flex-wrap gap-3">
         <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
-          <button
-            onClick={() => setCurrencyTab(null)}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${!currencyTab ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
+          <button onClick={() => setTypeTab(null)}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${!typeTab ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
             Todas
           </button>
-          {availableCurrencies.map(c => (
-            <button key={c}
-              onClick={() => setCurrencyTab(c)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${currencyTab === c ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
-              {c}
+          {TRANSACTION_TYPES.map(t => (
+            <button key={t.id} onClick={() => setTypeTab(t.id)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${typeTab === t.id
+                ? t.id === 'compras' ? 'bg-white shadow-sm text-rose-700' : 'bg-white shadow-sm text-emerald-700'
+                : 'text-slate-500 hover:text-slate-700'}`}>
+              {t.label}
             </button>
           ))}
         </div>
-      )}
+
+        {availableCurrencies.length > 1 && (
+          <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+            <button onClick={() => setCurrencyTab(null)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${!currencyTab ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
+              Todas
+            </button>
+            {availableCurrencies.map(c => (
+              <button key={c} onClick={() => setCurrencyTab(c)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${currencyTab === c ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Annual summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -120,7 +137,9 @@ export default function MonthlyReport({ expenses }) {
       {/* Matrix table */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-700">Gastos {year} — por mes y categoría</h2>
+          <h2 className="font-semibold text-slate-700">
+            {typeTab ? (typeTab === 'compras' ? 'Compras' : 'Ventas') : 'Compras y Ventas'} {year} — por mes y categoría
+          </h2>
           <span className="text-sm text-slate-500">Total: <strong className="text-slate-800">{fmt(grandTotal, currency)}</strong></span>
         </div>
         <div className="overflow-x-auto">

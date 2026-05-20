@@ -9,6 +9,13 @@ export const CATEGORIES = [
   { id: 'otros',        label: 'Otros',         color: '#6b7280', bg: 'bg-gray-100',   text: 'text-gray-700' },
 ]
 
+export const TRANSACTION_TYPES = [
+  { id: 'compras', label: 'Compras', color: 'bg-rose-100', text: 'text-rose-700', accent: '#f43f5e' },
+  { id: 'ventas',  label: 'Ventas',  color: 'bg-emerald-100', text: 'text-emerald-700', accent: '#10b981' },
+]
+
+export const TRANSACTION_TYPE_MAP = Object.fromEntries(TRANSACTION_TYPES.map(t => [t.id, t]))
+
 export const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]))
 
 export function getCategoryColor(id) {
@@ -17,4 +24,8 @@ export function getCategoryColor(id) {
 
 export function getCategoryLabel(id) {
   return CATEGORY_MAP[id]?.label ?? id
+}
+
+export function getTypeLabel(id) {
+  return TRANSACTION_TYPE_MAP[id]?.label ?? id
 }

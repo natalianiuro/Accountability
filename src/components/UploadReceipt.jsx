@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Upload, Sparkles, AlertCircle, CheckCircle, FileText, Image } from 'lucide-react'
-import { CATEGORIES } from '../utils/categories'
+import { CATEGORIES, TRANSACTION_TYPES } from '../utils/categories'
 import { loadSettings } from '../utils/storage'
 import { extractReceiptData, fileToBase64, isImageFile, isSupportedForAI } from '../utils/claude'
 import { extractWithGemini } from '../utils/gemini'
@@ -14,6 +14,7 @@ const emptyForm = () => ({
   vendor: '',
   description: '',
   category: 'otros',
+  transactionType: 'compras',
 })
 
 export default function UploadReceipt({ expenses }) {
@@ -77,6 +78,7 @@ export default function UploadReceipt({ expenses }) {
         vendor: data.vendor || prev.vendor,
         description: data.description || prev.description,
         category: data.category || prev.category,
+        transactionType: data.transactionType || prev.transactionType,
       }))
     } catch (err) {
       setExtractError(`Error al extraer: ${err.message}`)
@@ -175,6 +177,22 @@ export default function UploadReceipt({ expenses }) {
       {/* Form */}
       <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
         <h2 className="font-semibold text-slate-700">Datos del gasto</h2>
+
+        {/* Transaction type */}
+        <div>
+          <label className="block text-sm font-medium text-slate-600 mb-2">Tipo *</label>
+          <div className="grid grid-cols-2 gap-2">
+            {TRANSACTION_TYPES.map(t => (
+              <button key={t.id} type="button" onClick={() => set('transactionType', t.id)}
+                className={`py-2 rounded-lg text-sm font-medium border-2 transition-colors
+                  ${form.transactionType === t.id
+                    ? t.id === 'compras' ? 'border-rose-400 bg-rose-50 text-rose-700' : 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2 sm:col-span-1">

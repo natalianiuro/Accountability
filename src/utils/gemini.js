@@ -6,8 +6,9 @@ const PROMPT = `Analiza esta boleta o factura y extrae los datos. Responde SOLO 
   "amount": <número total sin símbolos>,
   "currency": "<CLP|USD|EUR|otro código ISO>",
   "vendor": "<nombre del proveedor>",
-  "description": "<descripción breve de la compra>",
-  "category": "<una de: alimentacion|transporte|oficina|tecnologia|marketing|servicios|entretenimiento|otros>"
+  "description": "<descripción breve>",
+  "category": "<una de: alimentacion|transporte|oficina|tecnologia|marketing|servicios|entretenimiento|otros>",
+  "transactionType": "<compras|ventas — compras si es un gasto/pago, ventas si es un ingreso/venta propia>"
 }
 Si no puedes determinar un campo, usa null.`
 
