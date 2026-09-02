@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "getonbrd": {
+      "type": "http",
+      "url": "https://www.getonbrd.com/mcp"
+    }
+  }
+}
